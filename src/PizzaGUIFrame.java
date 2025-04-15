@@ -1,9 +1,9 @@
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class PizzaGUIFrame extends JFrame {
+    static UserChoices userChoices = new UserChoices();
+    int baseCost = 0;
     public PizzaGUIFrame() {
         // window sizing
         Toolkit kit = Toolkit.getDefaultToolkit();
@@ -17,9 +17,6 @@ public class PizzaGUIFrame extends JFrame {
         JPanel northMenu = new JPanel(new GridLayout(1, 2));
         JPanel southMenu = new JPanel(new GridLayout(1, 1));
         JPanel commandPanel = new JPanel(new GridLayout(2, 3));
-        JPanel headerA = new JPanel(new BorderLayout());
-        JPanel crustHead = new JPanel();
-        JPanel sizeHead = new JPanel();
         JPanel crustMenu = new JPanel(new BorderLayout());
         JPanel crustButtons = new JPanel(new BorderLayout());
         JPanel sizeMenu = new JPanel(new BorderLayout());
@@ -28,6 +25,7 @@ public class PizzaGUIFrame extends JFrame {
         sizeMenu.setBorder(BorderFactory.createSoftBevelBorder(0));
         toppingMenu.setBorder(BorderFactory.createSoftBevelBorder(0));
         commandPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        container.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // elements
         // - meta
@@ -37,8 +35,8 @@ public class PizzaGUIFrame extends JFrame {
         JLabel crustHeader = new JLabel("CRUST");
         crustHeader.setFont(headerFont);
         JRadioButton crustSelectThinButton = new JRadioButton("Thin");
-        JRadioButton crustSelectRegularButton = new JRadioButton("Regular");
-        JRadioButton crustSelectDeepButton = new JRadioButton("Deep-dish");
+        JRadioButton crustSelectRegularButton = new JRadioButton("Regular (+$1.00)");
+        JRadioButton crustSelectDeepButton = new JRadioButton("Deep-dish (+$2.00)");
         ButtonGroup crustSelectionGroup = new ButtonGroup();
         crustHeader.setHorizontalAlignment(SwingConstants.LEFT);
         crustSelectionGroup.add(crustSelectThinButton);
@@ -48,31 +46,72 @@ public class PizzaGUIFrame extends JFrame {
         // - size
         String[] sizeChoice = {"- - select - -", "Small - $8.00", "Medium - $12.00", "Large - $16.00", "Super - $20.00"};
         JLabel sizeHeader = new JLabel("SIZE");
-        JComboBox<String> sizeBox = new JComboBox(sizeChoice);
+        JComboBox<String> sizeBox = new JComboBox<>(sizeChoice);
         sizeHeader.setFont(headerFont);
         sizeHeader.setHorizontalAlignment(SwingConstants.LEFT);
 
         // - topping
         JLabel toppingLabel = new JLabel("TOPPINGS");
+        JLabel toppingCostLabel = new JLabel("+$1.00 per topping");
         toppingLabel.setFont(headerFont);
-        JCheckBox extraCheese = new JCheckBox("extra cheese");
-        extraCheese.addActionListener(_ -> {
-            System.out.println(extraCheese.isSelected());
-        });
-        JCheckBox pepperoni = new JCheckBox("pepperoni");
-        JCheckBox mushroom = new JCheckBox("mushrooms");
-        JCheckBox anchovies = new JCheckBox("anchovies");
-        JCheckBox pineapple = new JCheckBox("pineapple");
-        JCheckBox aluminumFoil = new JCheckBox("aluminum foil");
+        JCheckBox extraCheese = new JCheckBox("Extra cheese");
+        JCheckBox pepperoni = new JCheckBox("Pepperoni");
+        JCheckBox mushroom = new JCheckBox("Mushrooms");
+        JCheckBox anchovies = new JCheckBox("Anchovies");
+        JCheckBox pineapple = new JCheckBox("Pineapple");
+        JCheckBox aluminumFoil = new JCheckBox("Aluminum foil");
 
         // - commands
         JButton orderButton = new JButton("Order!");
         orderButton.addActionListener(_ -> {
             System.out.println("order button pressed");
+
+            if (crustSelectionGroup.getSelection() != null) {
+                if (crustSelectThinButton.isSelected()) {
+                    userChoices.setCrustSelection("thin");
+                } else if (crustSelectRegularButton.isSelected()) {
+                    userChoices.setCrustSelection("regular");
+                    baseCost++;
+
+                } else if (crustSelectDeepButton.isSelected()) {
+                    userChoices.setCrustSelection("deep-dish");
+                    baseCost += 2;
+                }
+                if (sizeBox.getSelectedIndex() != 0) {
+                    if (sizeBox.getSelectedIndex() == 1) {
+                        userChoices.setSizeSelection("Small");
+                        baseCost += 8;
+                    } else if (sizeBox.getSelectedIndex() == 2) {
+                        userChoices.setSizeSelection("Medium");
+                        baseCost += 12;
+                    } else if (sizeBox.getSelectedIndex() == 3) {
+                        userChoices.setSizeSelection("Large");
+                        baseCost += 16;
+                    } else if (sizeBox.getSelectedIndex() == 4) {
+                        userChoices.setSizeSelection("Super");
+                        baseCost += 20;
+                    }
+                    userChoices.setCheeseSelected(extraCheese.isSelected());
+                    userChoices.setPepperoniSelected(pepperoni.isSelected());
+                    userChoices.setMushroomSelected(mushroom.isSelected());
+                    userChoices.setAnchoviesSelected(anchovies.isSelected());
+                    userChoices.setPineappleSelected(pineapple.isSelected());
+                    userChoices.setAluminumFoilSelected(aluminumFoil.isSelected());
+                    userChoices.setBaseCost(baseCost);
+                    JFrame orderFrame = new OrderFrame();   // To anyone reading this: please don't make the same mistake I did where I set the changes to the userChoices instance *AFTER* creating the OrderFrame. So many hours of pulling my hair out just from that :P
+                } else {
+                    JOptionPane.showMessageDialog(null, "No size was selected.");
+                }
+            } else {
+                JOptionPane.showMessageDialog(null, "No crust was selected.");
+            }
+            baseCost = 0;
         });
         JButton clearButton = new JButton("Clear");
         clearButton.addActionListener(_ -> {
             System.out.println("clear button pressed");
+            crustSelectionGroup.clearSelection();
+            sizeBox.setSelectedIndex(0);
             extraCheese.setSelected(false);
             pepperoni.setSelected(false);
             mushroom.setSelected(false);
@@ -89,23 +128,12 @@ public class PizzaGUIFrame extends JFrame {
         });
 
         // add to panels
-        /*
-        container.add(orderForm, BorderLayout.CENTER);
-        orderForm.add(northHeaders);
-        orderForm.add(northMenu);
-        northHeaders.add(crustHeader);
-        northHeaders.add(sizeHeader);
-        northMenu.add(crustSelectThinButton);
-        northMenu.add(crustSelectRegularButton);
-        northMenu.add(crustSelectDeepButton);
-
-         */
         container.add(orderForm, BorderLayout.CENTER);
         orderForm.add(northMenu);
         orderForm.add(southMenu);
         orderForm.add(commandPanel);
         northMenu.add(crustMenu);
-        northMenu.add(sizeMenu);      // wtf??
+        northMenu.add(sizeMenu);
         crustMenu.add(crustHeader, BorderLayout.NORTH);
         crustMenu.add(crustButtons, BorderLayout.CENTER);
         crustButtons.add(crustSelectThinButton, BorderLayout.NORTH);
@@ -115,7 +143,7 @@ public class PizzaGUIFrame extends JFrame {
         sizeMenu.add(sizeBox, BorderLayout.CENTER);
         southMenu.add(toppingMenu);
         toppingMenu.add(toppingLabel);
-        toppingMenu.add(Box.createGlue());
+        toppingMenu.add(toppingCostLabel);
         toppingMenu.add(Box.createGlue());
         toppingMenu.add(extraCheese);
         toppingMenu.add(pepperoni);
@@ -129,7 +157,6 @@ public class PizzaGUIFrame extends JFrame {
         commandPanel.add(orderButton);
         commandPanel.add(clearButton);
         commandPanel.add(quitButton);
-
         add(container);
         // meta
         setVisible(true);
